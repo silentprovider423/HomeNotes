@@ -1,0 +1,7 @@
+*.xcodeproj/
+build/
+build-ipa/
+Payload/
+.DS_Store
+xcuserdata/
+.test-account
