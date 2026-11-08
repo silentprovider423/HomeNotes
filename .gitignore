@@ -5,3 +5,6 @@ Payload/
 .DS_Store
 xcuserdata/
 .test-account
+.sim-udid
+*.ipa
+DerivedData/

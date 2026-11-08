@@ -9,7 +9,8 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: minimal
-    MARKETING_VERSION: "0.1.0"
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
@@ -30,10 +31,60 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         CFBundleDisplayName: HomeNotes
         CFBundleDevelopmentRegion: en
+        CFBundleLocalizations: [en, de]
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSCameraUsageDescription: "Damit du Fotos und Videos direkt in eine Notiz aufnehmen kannst."
+        NSPhotoLibraryUsageDescription: "Damit du Fotos und Videos an Notizen anhängen kannst."
+        NSLocalNetworkUsageDescription: "Verbindung zu deiner Nextcloud im Heimnetz."
+        ITSAppUsesNonExemptEncryption: false
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.homeroll.notes
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+
+  HomeNotesTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/Unit
+    dependencies:
+      - target: HomeNotes
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.homeroll.notes.tests
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/HomeNotes.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HomeNotes
+        BUNDLE_LOADER: $(TEST_HOST)
+
+  HomeNotesUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Tests/UI
+    dependencies:
+      - target: HomeNotes
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.homeroll.notes.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: HomeNotes
+        SWIFT_DEFAULT_ACTOR_ISOLATION: nonisolated
+
+schemes:
+  HomeNotes:
+    build:
+      targets:
+        HomeNotes: all
+        HomeNotesTests: [test]
+        HomeNotesUITests: [test]
+    test:
+      targets:
+        - HomeNotesTests
+        - HomeNotesUITests
