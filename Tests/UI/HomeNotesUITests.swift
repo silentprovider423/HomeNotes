@@ -68,4 +68,47 @@ final class HomeNotesUITests: XCTestCase {
         app.buttons["Löschen"].firstMatch.tap()
         XCTAssertFalse(app.staticTexts[title].firstMatch.waitForExistence(timeout: 3))
     }
+
+    /// Neue Notiz aus einer Notiz heraus, die in „Alle Notizen“ geöffnet wurde → Standardordner „Notizen“.
+    @MainActor
+    func testNewNoteFromAllNotesGoesToDefaultFolder() throws {
+        let env = ProcessInfo.processInfo.environment
+        guard let s = env["NOTES_SERVER"], let u = env["NOTES_USER"], let p = env["NOTES_PASSWORD"], !s.isEmpty else {
+            throw XCTSkip("Kein Testkonto")
+        }
+        let app = XCUIApplication()
+        app.launchEnvironment = ["NOTES_SERVER": s, "NOTES_USER": u, "NOTES_PASSWORD": p]
+        app.launchArguments = ["-AppleLanguages", "(de)", "-AppleLocale", "de_DE"]
+        app.launch()
+
+        // eine Notiz aus einem anderen Ordner (Demodaten „Travel“) in „Alle Notizen“ öffnen
+        let other = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'note.' AND label CONTAINS 'Travel'")).firstMatch
+        guard other.waitForExistence(timeout: 20) else { throw XCTSkip("Keine Notiz im Ordner Travel") }
+        other.tap()
+        XCTAssertTrue(app.textViews["editor"].waitForExistence(timeout: 10))
+
+        let title = "Ordnertest \(Int(Date().timeIntervalSince1970) % 100000)"
+        app.buttons["compose"].firstMatch.tap()
+        let editor = app.textViews["editor"]
+        XCTAssertTrue(editor.waitForExistence(timeout: 10))
+        editor.typeText(title)
+        app.buttons["done"].firstMatch.tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        let row = app.buttons["note.\(title)"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        XCTAssertTrue(row.label.contains("Notizen"), row.label)
+        XCTAssertFalse(row.label.contains("Travel"), row.label)
+
+        // aufräumen: löschen und aus „Zuletzt gelöscht“ entfernen
+        row.swipeLeft()
+        app.buttons["Löschen"].firstMatch.tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let trash = app.buttons["folder.trash"].firstMatch
+        if trash.waitForExistence(timeout: 10) {
+            trash.tap()
+            let t = app.staticTexts[title].firstMatch
+            if t.waitForExistence(timeout: 5) { t.swipeLeft(); app.buttons["Löschen"].firstMatch.tap() }
+        }
+    }
 }

@@ -443,7 +443,22 @@ final class NoteStore {
     /// Voller Abgleich: erst eigene Änderungen hoch, dann Serverstand holen, dann Ordner/Erstellungsdaten per WebDAV.
     func sync() async {
         guard client.isSignedIn else { return }
-        if isSyncing { syncAgain = true; return }
+        // Läuft schon ein Abgleich (z. B. der regelmäßige), danach noch einmal abgleichen und darauf warten –
+        // sonst endet „Herunterziehen“ sofort, ohne dass etwas passiert
+        if let running = runningSync {
+            syncAgain = true
+            await running.value
+            return
+        }
+        let t = Task { await self.syncLoop() }
+        runningSync = t
+        await t.value
+        runningSync = nil
+    }
+
+    private var runningSync: Task<Void, Never>?
+
+    private func syncLoop() async {
         isSyncing = true
         defer { isSyncing = false }
         repeat {

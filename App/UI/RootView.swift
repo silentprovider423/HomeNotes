@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum Route: Hashable {
+nonisolated enum Route: Hashable {
     case folder(FolderID)
     case note(Int)
     case trashNote(UUID)
@@ -9,6 +9,20 @@ enum Route: Hashable {
 @MainActor @Observable
 final class Router {
     var path: [Route] = [.folder(.all)]
+
+    /// Ordner für eine neue Notiz: der zuletzt geöffnete Ordner im Stapel. „Alle Notizen“, „Zuletzt gelöscht“
+    /// oder gar keiner → Standardordner „Notizen“ (Kategorie ""), wie bei Apple.
+    var categoryForNewNote: String { Self.category(forNewNoteIn: path) }
+
+    nonisolated static func category(forNewNoteIn path: [Route]) -> String {
+        for r in path.reversed() {
+            if case .folder(let f) = r {
+                if case .category(let c) = f { return c }
+                return ""
+            }
+        }
+        return ""
+    }
 
     func openNote(_ id: Int, replace: Bool = false) {
         if replace, case .note = path.last { path.removeLast() }

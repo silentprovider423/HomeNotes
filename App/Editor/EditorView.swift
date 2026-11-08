@@ -18,7 +18,8 @@ struct NoteEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("newNoteStyle") private var newNoteStyle = BlockKind.title.rawValue
     @State private var editor = EditorController()
-    @State private var router = AttachRouter.shared
+    @State private var attachRouter = AttachRouter.shared
+    @Environment(Router.self) private var router
     @State private var photoItems: [PhotosPickerItem] = []
     @State private var showPhotos = false
     @State private var showCamera = false
@@ -46,9 +47,9 @@ struct NoteEditorView: View {
             .onChange(of: store.serverRevision) {
                 if let n = note, !isTrash { editor.reloadIfChanged(markdown: n.content, modified: n.modifiedDate) }
             }
-            .onChange(of: router.pending) {
-                guard let s = router.pending else { return }
-                router.pending = nil
+            .onChange(of: attachRouter.pending) {
+                guard let s = attachRouter.pending else { return }
+                attachRouter.pending = nil
                 attach(s)
             }
             .sheet(item: $editor.tableEdit) { e in
@@ -157,7 +158,8 @@ struct NoteEditorView: View {
                 }
                 ToolbarSpacer(.flexible, placement: .bottomBar)
                 ToolbarItem(placement: .bottomBar) {
-                    NewNoteButton(category: note?.category ?? "", replace: true)
+                    // wie Apple: Ordner der Liste, aus der die Notiz geöffnet wurde („Alle Notizen“ → Standardordner)
+                    NewNoteButton(category: router.categoryForNewNote, replace: true)
                 }
             }
         }
