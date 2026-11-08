@@ -20,11 +20,22 @@ enum LoginFlow {
         var req = URLRequest(url: base.appendingPathComponent("index.php/login/v2"))
         req.httpMethod = "POST"
         req.setValue("HomeNotes", forHTTPHeaderField: "User-Agent")   // erscheint so in Nextclouds Geräteliste
-        let (data, resp) = try await URLSession.shared.data(for: req)
+        let (data, resp) = try await dataRetryingConnection(req)
         guard (resp as? HTTPURLResponse)?.statusCode == 200 else {
             throw NotesError.http((resp as? HTTPURLResponse)?.statusCode ?? 0, String(localized: "Keine Nextcloud unter dieser Adresse"))
         }
         return try JSONDecoder().decode(Start.self, from: data)
+    }
+
+    /// Beim allerersten Zugriff fragt iOS nach dem lokalen Netzwerk; solange der Dialog offen ist, scheitert die
+    /// Anfrage. Deshalb Verbindungsfehler bis zu einer halben Minute lang neu versuchen (2, 4, 8, 15 s), bevor der Fehler kommt.
+    static func dataRetryingConnection(_ req: URLRequest) async throws -> (Data, URLResponse) {
+        let retryable: Set<URLError.Code> = [.notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost, .timedOut]
+        for delay in [2, 4, 8, 15] {
+            do { return try await URLSession.shared.data(for: req) }
+            catch let e as URLError where retryable.contains(e.code) { try await Task.sleep(for: .seconds(delay)) }
+        }
+        return try await URLSession.shared.data(for: req)
     }
 
     /// Schritt 2: alle 2 s nachfragen, bis der Nutzer im Browser fertig ist (max. 20 Minuten, wie Nextcloud).
