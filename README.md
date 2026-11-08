@@ -141,7 +141,7 @@ tools/        icon generator, string catalog builder
 
 ## License
 
-[MIT](LICENSE). Nextcloud and the Notes app (AGPL-3.0) are not included – HomeNotes only talks to their HTTP APIs.
+[GPL-3.0](LICENSE) (GNU General Public License v3.0; releases up to this change were published under MIT). Nextcloud and the Notes app (AGPL-3.0) are not included – HomeNotes only talks to their HTTP APIs.
 
 ---
 
